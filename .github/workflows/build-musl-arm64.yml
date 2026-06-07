@@ -1,0 +1,29 @@
+name: Build Musl ARM64
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build musl arm64 binary via Docker
+        run: |
+          # Build only the builder stage from the Dockerfile
+          docker build --platform linux/arm64 --target builder -t proxy-builder .
+          # Copy the compiled binary out of the builder container
+          docker create --name temp-container proxy-builder
+          docker cp temp-container:/app/CLIProxyAPI ./cli-proxy-api-musl-arm64
+          docker rm temp-container
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-proxy-api-musl-arm64
+          path: ./cli-proxy-api-musl-arm64
